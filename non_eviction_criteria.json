@@ -1,0 +1,141 @@
+{
+  "non_eviction_turn_criteria": {
+    "definition": "A property turnover where tenant departure is NOT related to eviction proceedings or involuntary removal by landlord",
+    "classification_method": "exclusion_based",
+    "data_source": "PastTenantMoveOutReason field in jobs_cache table",
+    
+    "exclusion_criteria": {
+      "description": "Move-out reasons that classify as EVICTION-RELATED (exclude from non-eviction)",
+      "patterns": [
+        {
+          "pattern": "%Eviction%",
+          "description": "Any move-out reason containing 'Eviction'"
+        },
+        {
+          "pattern": "%Lease Violation%",
+          "description": "Any move-out reason containing 'Lease Violation'"
+        },
+        {
+          "pattern": "%Non-Eviction Skip%",
+          "description": "Tenant abandonment without proper notice"
+        },
+        {
+          "pattern": "%Do Not Renew%",
+          "description": "Landlord decision not to renew lease"
+        },
+        {
+          "pattern": "%Resident Transition Program%",
+          "description": "Company-assisted tenant relocation program"
+        }
+      ],
+      "sql_logic": "WHERE PastTenantMoveOutReason NOT LIKE '%Eviction%' AND PastTenantMoveOutReason NOT LIKE '%Lease Violation%' AND PastTenantMoveOutReason NOT LIKE '%Non-Eviction Skip%' AND PastTenantMoveOutReason NOT LIKE '%Do Not Renew%' AND PastTenantMoveOutReason NOT LIKE '%Resident Transition Program%'"
+    },
+
+    "inclusion_criteria": {
+      "description": "Categories of reasons that qualify as NON-EVICTION turns",
+      "categories": [
+        {
+          "category": "Voluntary - Planned",
+          "percentage_of_non_eviction": 33.10,
+          "examples": [
+            "Home Purchase"
+          ],
+          "description": "Positive tenant outcomes - purchasing own home"
+        },
+        {
+          "category": "Voluntary - Life Change", 
+          "percentage_of_non_eviction": 23.43,
+          "examples": [
+            "Life Events | Job Change, Loss, or Retirement",
+            "Life Events | Change in Household (marriage, divorce, new child, roommate change etc.)",
+            "Life Events | Military Relocation or Deployment"
+          ],
+          "description": "Natural life transitions requiring relocation"
+        },
+        {
+          "category": "Voluntary - Financial",
+          "percentage_of_non_eviction": 17.57,
+          "examples": [
+            "Affordability / Rental Price | Rent Increase/Price is Unaffordable",
+            "Affordability / Rental Price | Home is Too Expensive Relative to Similar Options", 
+            "Affordability / Rental Price | Home Utilities Expense or Additional Expenses Too High"
+          ],
+          "description": "Economic factors making current housing unaffordable"
+        },
+        {
+          "category": "Voluntary - Preference",
+          "percentage_of_non_eviction": 14.33,
+          "examples": [
+            "Home Location / Neighborhood | Location/Commute",
+            "Home Doesn't Fit My Needs | Size or Layout of the Home",
+            "Home Location / Neighborhood | Safety or Security",
+            "Home Location / Neighborhood | Schools",
+            "Home Location / Neighborhood | Neighbors"
+          ],
+          "description": "Lifestyle and location preferences"
+        },
+        {
+          "category": "Voluntary - Dissatisfaction",
+          "percentage_of_non_eviction": 9.95,
+          "examples": [
+            "FKH Experience | Consistent Maintenance Issues and/or Maintenance Issues not Resolved",
+            "FKH Experience | Customer Service Did Not Meet Expectations",
+            "Home Doesn't Fit My Needs | Quality or Condition of the Home"
+          ],
+          "description": "Service or property condition issues"
+        }
+      ]
+    },
+
+    "validation_rules": {
+      "required_fields": [
+        "JobType = 'Turnover'",
+        "PastTenantMoveOutReason IS NOT NULL",
+        "PastTenantMoveOutReason != ''"
+      ],
+      "data_quality_checks": [
+        "Exclude records where PastTenantMoveOutReason is null or empty",
+        "Apply case-insensitive pattern matching for exclusion criteria",
+        "Verify turnover job completion date is valid"
+      ]
+    },
+
+    "cost_characteristics": {
+      "average_cost": 4496,
+      "cost_comparison": {
+        "non_eviction_avg": 4496,
+        "eviction_related_avg": 7023,
+        "eviction_premium": "56.2% higher than non-eviction"
+      },
+      "volatility": "Lower cost volatility than eviction turns",
+      "predictability": "More seasonal and predictable patterns"
+    },
+
+    "operational_metrics": {
+      "frequency": {
+        "description": "Higher volume than eviction turns",
+        "example_monthly_volume": "93.2 jobs/month (Atlanta market)"
+      },
+      "seasonality": {
+        "winter_peak": "Home purchases dominate (Dec-Feb)",
+        "summer_peak": "Job changes dominate (Jul-Aug)", 
+        "spring_focus": "Affordability pressure (Apr-Jun)"
+      },
+      "retention_opportunity": "High - represents voluntary departures that may be preventable"
+    },
+
+    "implementation": {
+      "sql_example": "SELECT * FROM jobs_cache j JOIN static_table_cache s ON j.bkMasterProperty = s.bkMasterProperty WHERE j.JobType = 'Turnover' AND j.PastTenantMoveOutReason IS NOT NULL AND j.PastTenantMoveOutReason != '' AND j.PastTenantMoveOutReason NOT LIKE '%Eviction%' AND j.PastTenantMoveOutReason NOT LIKE '%Lease Violation%' AND j.PastTenantMoveOutReason NOT LIKE '%Non-Eviction Skip%' AND j.PastTenantMoveOutReason NOT LIKE '%Do Not Renew%' AND j.PastTenantMoveOutReason NOT LIKE '%Resident Transition Program%'",
+      "case_statement": "CASE WHEN PastTenantMoveOutReason NOT LIKE '%Eviction%' AND PastTenantMoveOutReason NOT LIKE '%Lease Violation%' AND PastTenantMoveOutReason NOT LIKE '%Non-Eviction Skip%' AND PastTenantMoveOutReason NOT LIKE '%Do Not Renew%' AND PastTenantMoveOutReason NOT LIKE '%Resident Transition Program%' THEN 'Non-Eviction' ELSE 'Eviction-Related' END"
+    },
+
+    "metadata": {
+      "source": "FirstKey Homes Knowledge Graph Analysis",
+      "analysis_period": "12 months portfolio-wide data",
+      "total_non_eviction_analyzed": 12555,
+      "markets_covered": 29,
+      "last_updated": "2025-06-27",
+      "confidence_level": "High - based on comprehensive portfolio analysis"
+    }
+  }
+}
